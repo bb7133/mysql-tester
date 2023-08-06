@@ -249,7 +249,7 @@ func (t *tester) preProcess() {
 		log.Fatalf("Open db err %v", err)
 	}
 
-	log.Warn("Create new db", mdb)
+	log.Info("Create new db: ", t.name)
 
 	if _, err = mdb.Exec(fmt.Sprintf("create database `%s`", t.name)); err != nil {
 		log.Fatalf("Executing create db %s err[%v]", t.name, err)
@@ -541,6 +541,7 @@ func (t *tester) concurrentExecute(querys []query, wg *sync.WaitGroup, errOccure
 	}
 	return
 }
+
 func (t *tester) loadQueries() ([]query, error) {
 	data, err := ioutil.ReadFile(t.testFileName())
 	if err != nil {
@@ -556,6 +557,11 @@ func (t *tester) loadQueries() ([]query, error) {
 		// we will skip # comment here
 		if strings.HasPrefix(s, "#") {
 			newStmt = true
+			if strings.HasPrefix(s, "# Test") {
+				log.Info("Found comment: ", s, ", add reset database")
+				queries = append(queries, query{Query: "DROP DATABASE IF EXISTS test", Line: i + 1})
+				queries = append(queries, query{Query: "CREATE DATABASE test", Line: i + 1})
+			}
 			continue
 		} else if strings.HasPrefix(s, "--") {
 			queries = append(queries, query{Query: s, Line: i + 1})
